@@ -10,7 +10,7 @@ SELECTORS = {
     "name":"body > div.s-wrapper > div > div > section > div > header > h1",
     #"phone":"body > div.popup-scrollable.m-rounded.m-500.active > div > div.scrollable-c > div:nth-child(1) > div > div:nth-child(1) > div > div.split-list-m > span",
     "address":"body > div.s-wrapper > div > div > section > div > div > div.company-card-info > ul > li:nth-child(1) > div > a",
-    "site":"body > div.s-wrapper > div > div > section > div > div > div.company-card-info > ul > li:nth-child(4) > div > a",
+    "site":"body > div.s-wrapper > div > div > section > div > div > div > ul > li:nth-child(4) > div",
     "description":"body > div.s-wrapper > div > div > section > div > header > div > p",
 }
 
@@ -35,7 +35,7 @@ class Parser(ABC):
 
 
 class ParserLinks(Parser):
-    _url = "https://tam.by/avto/arenda/page{}"
+    _url = "https://tam.by/avto/arenda/page{}/"
 
     def __init__(self, num_page):
         self._num_page = num_page
@@ -43,10 +43,12 @@ class ParserLinks(Parser):
 
     def active_page(self):
         try:
-            pager = self.dom.find("div", class_="b-pagination")
-            page = pager.find("li", class_="p-item")
-            return self._num_page == int(page.get_text())
-
+            pager = self.dom.find("ul", class_="b-pagination-list")
+            page = pager.find_all("li", class_="p-item")
+            ls=[i.get_text() for i in page]
+            ls.remove('…')
+            return self._num_page in list(map(int,ls))
+            
         except Exception:
             return False
 
@@ -76,7 +78,7 @@ class ParserLinks(Parser):
         return self._links
 
 
-class ParsInfo(Parser):
+class ParserInfo(Parser):
     def __init__(self, url):
         self._url = url
         self._info = {}
@@ -96,15 +98,14 @@ class ParsInfo(Parser):
             #phone=self.dom.find(SELECTORS['phone'])
             site=self.dom.find(SELECTORS['site'],first=True)
             description=self.dom.find(SELECTORS['description'],first=True)
-
         except AttributeError:
             raise AttributeError("Call method get_data()")
 
-        self._info.update(name=name.text,
-                        address=address.text,
-                        site=site.text,
-                        description=description.text,
-                        url=self._url)
+        self._info.update(name=name.text if name!=None else"Информации нет",
+                        address=address.text if address!=None else"Информации нет",
+                        site=site.text if site!=None else"Информации нет",
+                        description=description.text if description!=None else"Информации нет",
+                        url=self._url )
 
     
     @property
@@ -116,12 +117,10 @@ class ParsInfo(Parser):
 
 
 if __name__ == "__main__":
-    parser_links = ParserLinks(1)
+    parser_links = ParserLinks(6)
     parser_links.get_data()
     parser_links.process_data()
-    info=ParsInfo(parser_links.links[0])
-    info.get_data()
-    info.process_data()
-    pp.pprint(info.info)
-
-    
+    parser_info=ParserInfo(parser_links.links[49])
+    parser_info.get_data()
+    parser_info.process_data()
+    pp.pprint(parser_info.info)    
