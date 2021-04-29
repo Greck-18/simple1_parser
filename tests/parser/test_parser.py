@@ -8,8 +8,7 @@ from .conftest import num_page,num_page_neg,count_url,count_url_neg
 def test_links(num_page):
     parser_links = ParserLinks(num_page)
     parser_links.get_data()
-    assert bool(num_page) == parser_links.active_page()
-
+    assert num_page in [i for i in range(parser_links.last_page())]
 
 @mark.links
 @mark.neg
@@ -18,6 +17,7 @@ def test_neg_links(num_page_neg):
     with raises(AttributeError):
         parser_links.get_data()
         parser_links.process_data()
+        assert num_page in [i for i in range(parser_links.last_page())]
         #assert bool(num_page)==parser_links.active_page()
 
 

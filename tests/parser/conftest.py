@@ -1,16 +1,16 @@
 from pytest import fixture, mark
 
 
-@fixture(params=(i for i in range(51)))
+@fixture(params=(i for i in range(15)))
 def count_url(request):
     return request.param
 
 
-@fixture(params=(i for i in range(1,7)))
+@fixture(params=(i for i in range(7)))
 def num_page(request):
     return request.param
 
-@fixture(params=[7,8,9,10,-1,0,-123,55,99])
+@fixture(params=[7,8,9,10,-1,-123,55,99,1014,-3435,'fgfg',True])
 def num_page_neg(request):
     return request.param
 

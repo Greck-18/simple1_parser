@@ -36,22 +36,22 @@ class Parser(ABC):
 
 class ParserLinks(Parser):
     _url = "https://tam.by/avto/arenda/page{}/"
+    _links = []
 
-    def __init__(self, num_page):
-        self._num_page = num_page
-        self._links = []
+    def __init__(self,num_page):
+        self._num_page=num_page
 
-    def active_page(self):
-        try:
-            pager = self.dom.find("ul", class_="b-pagination-list")
-            page = pager.find_all("li", class_="p-item")
-            ls=[i.get_text() for i in page]
-            ls.remove('…')
-            return self._num_page in list(map(int,ls))
-            
-        except Exception:
-            return False
+    def last_page(self):
+        response =requests.get(self._url.format(self._num_page),headers=HEADERS)
+        if response.status_code==200:
+            self.dom=BeautifulSoup(response.text,"lxml")
+            content=self.dom.find('ul',class_="b-pagination-list")
+            pages=content.find_all('li',class_="p-item")
+            return int([i.get_text() for i in pages][-1])+1
+        else:
+            raise AttributeError(f'Error {response.status_code}')
 
+   
     def get_data(self):
         response = requests.get(self._url.format(self._num_page), headers=HEADERS)
         if response.status_code == 200:
@@ -60,15 +60,15 @@ class ParserLinks(Parser):
             raise AttributeError(f"Error {response.status_code}")
 
     def process_data(self):
-        if not self.active_page():
-            raise AttributeError("The page {self._num_page} unavailable ")
         try:
             conteiner = self.dom.find("section", class_="b-section result-company-list")
             links = conteiner.find_all("a", class_="tam-card-whole-link")
         # link=case.find_all("a",class_="tam-card-whole-link")
         except AttributeError:
             raise AttributeError("Call method get_data()")
-        self._links = [i["href"] for i in links]
+        #self._links.[i["href"] for i in links]
+        for i in links:
+            self._links.append(i.get('href'))
 
     def save_data(self):
         pass
@@ -79,9 +79,10 @@ class ParserLinks(Parser):
 
 
 class ParserInfo(Parser):
-    def __init__(self, url):
-        self._url = url
-        self._info = {}
+    _page_info={}
+    _info=[]
+    def __init__(self,url):
+        self._url=url
 
     def get_data(self):
         session = HTMLSession()
@@ -101,11 +102,12 @@ class ParserInfo(Parser):
         except AttributeError:
             raise AttributeError("Call method get_data()")
 
-        self._info.update(name=name.text if name!=None else"Информации нет",
-                        address=address.text if address!=None else"Информации нет",
-                        site=site.text if site!=None else"Информации нет",
-                        description=description.text if description!=None else"Информации нет",
-                        url=self._url )
+        self._page_info={"name":name.text if name!=None else"Информации нет",
+                        "address":address.text if address!=None else"Информации нет",
+                        "site":site.text if site!=None else"Информации нет",
+                        "description":description.text if description!=None else"Информации нет",
+                        "url":self._url }
+        self._info.append(self._page_info)
 
     
     @property
@@ -116,11 +118,24 @@ class ParserInfo(Parser):
         pass
 
 
-if __name__ == "__main__":
-    parser_links = ParserLinks(6)
-    parser_links.get_data()
-    parser_links.process_data()
-    parser_info=ParserInfo(parser_links.links[49])
-    parser_info.get_data()
-    parser_info.process_data()
-    pp.pprint(parser_info.info)    
+
+def all_info():
+    links=ParserLinks(1)
+    for i in range(1,links.last_page()):
+        links=ParserLinks(i)
+        print(f"Processing: parsing page {i} from {links.last_page()-1}")
+        links.get_data()
+        links.process_data()
+
+    info=ParserInfo(links.links[0])
+    for i in range(len(links.links)):
+        info=ParserInfo(links.links[i])
+        print(f"Processing: url {i+1} from {len(links.links)}")
+        info.get_data()
+        info.process_data()
+    return info.info
+
+
+
+if __name__=="__main__":
+    print(all_info())
