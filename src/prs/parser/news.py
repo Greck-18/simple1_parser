@@ -1,10 +1,10 @@
 from requests_html import HTMLSession
 from abc import ABC, abstractclassmethod
-import re
 from bs4 import BeautifulSoup
 import requests
 import lxml
-import pprint as pp
+import sqlite3
+
 
 SELECTORS = {
     "name":"body > div.s-wrapper > div > div > section > div > header > h1",
@@ -72,10 +72,12 @@ class ParserLinks(Parser):
 
     def save_data(self):
         pass
+        
 
     @property
     def links(self):
         return self._links
+
 
 
 class ParserInfo(Parser):
@@ -114,8 +116,17 @@ class ParserInfo(Parser):
     def info(self):
         return self._info
         
-    def save_data(self):
-        pass
+    def save_data(self,links):
+        try:
+            connect=sqlite3.connect('database.db')
+            cursor=connect.cursor()
+        except Exception as error:
+            raise AttributeError(f"{error}")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS  Info(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, site TEXT , address TEXT , description TEXT , url TEXT )""")
+        for i in range(len(links)//5):
+            cursor.execute("""INSERT INTO links(name,site,address,description,url) VALUES(?,?,?,?,?)""",(self._info[i]['name'],self._info[i]['site'],self._info[i]['address'],self._info[i]['description'],links[i]))
+            connect.commit()
+        connect.close()
 
 
 
@@ -126,6 +137,7 @@ def all_info():
         print(f"Processing: parsing page {i} from {links.last_page()-1}")
         links.get_data()
         links.process_data()
+    print('Ссылки готовы!')
 
     info=ParserInfo(links.links[0])
     for i in range(len(links.links)):
@@ -133,9 +145,10 @@ def all_info():
         print(f"Processing: url {i+1} from {len(links.links)}")
         info.get_data()
         info.process_data()
-    return info.info
+    info.save_data(links.links)
+    print("Всё готово")
 
 
 
 if __name__=="__main__":
-    print(all_info())
+    all_info()
