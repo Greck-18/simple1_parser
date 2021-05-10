@@ -122,9 +122,9 @@ class ParserInfo(Parser):
             cursor=connect.cursor()
         except Exception as error:
             raise AttributeError(f"{error}")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS  Info(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, site TEXT , address TEXT , description TEXT , url TEXT )""")
-        for i in range(len(links)//5):
-            cursor.execute("""INSERT INTO links(name,site,address,description,url) VALUES(?,?,?,?,?)""",(self._info[i]['name'],self._info[i]['site'],self._info[i]['address'],self._info[i]['description'],links[i]))
+        cursor.execute("""CREATE TABLE IF NOT EXISTS  RepairsInfo(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, site TEXT , address TEXT , description TEXT , url TEXT )""")
+        for i in range(len(links)):
+            cursor.execute("""INSERT INTO RepairsInfo(name,site,address,description,url) VALUES(?,?,?,?,?)""",(self._info[i]['name'],self._info[i]['site'],self._info[i]['address'],self._info[i]['description'],links[i]))
             connect.commit()
         connect.close()
 
